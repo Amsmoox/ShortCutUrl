@@ -1,1 +1,57 @@
- 
+package db
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+)
+
+var DB *sql.DB
+
+// InitDB initializes the database connection pool.
+func InitDB() error {
+	// Load .env file from the root directory
+	err := godotenv.Load() // Assumes .env is in the current working directory when the app starts
+	if err != nil {
+		// If .env is not found, try loading from one level up (common when running tests or from cmd/)
+		err = godotenv.Load("../.env")
+		if err != nil {
+			log.Println("Warning: .env file not found, relying on environment variables.")
+			// Continue without error if .env is optional or vars are set externally
+		}
+	}
+
+
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbPassword, dbName)
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		db.Close() // Close the connection if ping fails
+		return fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	DB = db
+	log.Println("Database connection established successfully.")
+	return nil
+}
+
+// GetDB returns the database connection pool.
+func GetDB() *sql.DB {
+	return DB
+} 
