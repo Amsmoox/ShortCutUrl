@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"shorturl/internal/models"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -30,6 +31,26 @@ func generateShortCode() string {
 		b[i] = shortCodeChars[rand.Intn(len(shortCodeChars))]
 	}
 	return string(b)
+}
+
+// respondWithError sends a JSON error response.
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	respondWithJSON(w, code, map[string]string{"error": message})
+}
+
+// respondWithJSON sends a JSON response.
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("Error marshalling JSON response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Internal server error marshalling response"}`))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }
 
 // shortCodeExists checks if a short code already exists in the database.
@@ -58,16 +79,22 @@ func CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if req.URL == "" {
-		http.Error(w, "URL cannot be empty", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "URL cannot be empty")
+		return
+	}
+	
+	// Basic check if URL seems valid (this should be more robust)
+	if !strings.HasPrefix(req.URL, "http://") && !strings.HasPrefix(req.URL, "https://") {
+		respondWithError(w, http.StatusBadRequest, "Invalid URL format (must start with http:// or https://)")
 		return
 	}
 
-	// TODO: Add validation for URL format
+	// TODO: Add more robust URL validation
 
 	var shortCode string
 	var exists bool
@@ -80,7 +107,7 @@ func CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		exists, checkErr = shortCodeExists(shortCode) 
 		if checkErr != nil {
 			log.Printf("Error checking short code existence: %v", checkErr)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Internal server error checking short code")
 			return
 		}
 		if !exists {
@@ -95,7 +122,7 @@ func CreateShortURL(w http.ResponseWriter, r *http.Request) {
 
 	if exists {
 		log.Println("Failed to generate a unique short code after several attempts")
-		http.Error(w, "Failed to generate unique short code", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "Failed to generate unique short code after several attempts")
 		return
 	}
 
@@ -110,9 +137,10 @@ func CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Generated unique short code '%s' for URL '%s'", url.ShortCode, url.OriginalURL)
 
 	// Simulate successful creation for now
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"short_code": url.ShortCode})
+	// w.Header().Set("Content-Type", "application/json") // Set by respondWithJSON
+	// w.WriteHeader(http.StatusCreated) // Set by respondWithJSON
+	// json.NewEncoder(w).Encode(map[string]string{"short_code": url.ShortCode}) // Use respondWithJSON
+	respondWithJSON(w, http.StatusCreated, map[string]string{"short_code": url.ShortCode})
 }
 
 // RedirectURL handles requests to redirect to the original URL.
@@ -121,7 +149,8 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	shortCode := vars["shortCode"]
 
 	if shortCode == "" {
-		http.Error(w, "Short code cannot be empty", http.StatusBadRequest)
+		// Although the route regex should prevent this, good to have a check
+		respondWithError(w, http.StatusBadRequest, "Short code cannot be empty")
 		return
 	}
 
@@ -130,9 +159,10 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	// TODO: Implement database lookup for the original URL based on shortCode
 	// For now, simulate a lookup and redirect
 	originalURL := "https://example.com" // Placeholder
+	found := true // Simulate finding the URL
 
-	if originalURL == "" { // Simulate not found
-		http.Error(w, "Short code not found", http.StatusNotFound)
+	if !found { // Simulate not found
+		respondWithError(w, http.StatusNotFound, "Short code not found")
 		return
 	}
 
