@@ -9,6 +9,13 @@ import (
 
 // SetupRoutes configures the application routes.
 func SetupRoutes(router *mux.Router) {
+	// Serve static files (like index.html)
+	// We'll configure the actual file server in main.go
+	// This handler specifically serves index.html for the root path
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/index.html")
+	}).Methods("GET")
+
 	// Route for creating a short URL (POST /api/shorten)
 	router.HandleFunc("/api/shorten", handlers.CreateShortURL).Methods("POST")
 
