@@ -12,16 +12,25 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// ANSI Color Codes
+const (
+	ColorReset  = "\033[0m"
+	ColorRed    = "\033[31m"
+	ColorGreen  = "\033[32m"
+	ColorYellow = "\033[33m"
+	ColorBlue   = "\033[34m"
+)
+
 func main() {
 	// Load .env file specifically for main, db.InitDB also loads it but good practice here too
 	err := godotenv.Load() // Load .env from current working dir (project root)
 	if err != nil {
-		log.Println("Warning: .env file not found in project root, relying on environment variables or db init load.")
+		log.Println(ColorYellow + "Warning: .env file not found in project root, relying on environment variables or db init load." + ColorReset)
 	}
 
 	// Initialize Database
 	if err := db.InitDB(); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		log.Fatalf(ColorRed+"Failed to initialize database: %v"+ColorReset, err)
 	}
 	defer db.DB.Close()
 
@@ -48,12 +57,12 @@ func main() {
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "8080" // Default port if not specified
-		log.Printf("Defaulting to port %s", port)
+		log.Printf(ColorYellow+"Warning: APP_PORT not set in .env. Defaulting to port %s"+ColorReset, port)
 	}
 
 	// Start Server
-	log.Printf("Server starting on port %s", port)
+	log.Printf(ColorGreen+"Server starting on port %s"+ColorReset, port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Fatalf(ColorRed+"Failed to start server: %v"+ColorReset, err)
 	}
 } 
