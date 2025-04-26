@@ -34,7 +34,14 @@ func main() {
 	// Create Router
 	r := mux.NewRouter()
 
-	// Setup Routes
+	// Setup static file serving before specific routes
+	// This serves files from the "static" directory directly.
+	// For example, /style.css would serve static/style.css
+	fs := http.FileServer(http.Dir("./static/"))
+	// Use PathPrefix to serve static files; StripPrefix removes /static/ from the request path
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+
+	// Setup Application Routes (including the root route "/")
 	routes.SetupRoutes(r)
 
 	// Get Port from environment or default
