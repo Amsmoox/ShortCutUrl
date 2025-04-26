@@ -34,6 +34,11 @@ func main() {
 	}
 	defer db.DB.Close()
 
+	// Initialize Database Tables (creates if not exists)
+	if err := db.InitTables(); err != nil {
+		log.Fatalf(ColorRed+"Failed to initialize database tables: %v"+ColorReset, err)
+	}
+
 	// Get Database connection
 	dbConn := db.GetDB()
 

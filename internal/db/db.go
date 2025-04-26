@@ -60,6 +60,27 @@ func InitDB() error {
 	return nil
 }
 
+// InitTables creates required database tables if they don't exist.
+func InitTables() error {
+	// SQL statement to create the urls table
+	createTableSQL := `
+	CREATE TABLE IF NOT EXISTS urls (
+		id SERIAL PRIMARY KEY,
+		original_url TEXT NOT NULL,
+		short_code VARCHAR(6) UNIQUE NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);`
+
+	// Execute the SQL
+	_, err := DB.Exec(createTableSQL)
+	if err != nil {
+		return fmt.Errorf(ColorRed+"failed to create tables: %w"+ColorReset, err)
+	}
+
+	log.Println(ColorGreen + "Database tables initialized successfully." + ColorReset)
+	return nil
+}
+
 // GetDB returns the database connection pool.
 func GetDB() *sql.DB {
 	return DB
