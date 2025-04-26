@@ -34,7 +34,6 @@ func InitDB() error {
 		}
 	}
 
-
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbHost := os.Getenv("DB_HOST")
