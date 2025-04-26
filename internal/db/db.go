@@ -10,6 +10,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// ANSI Color Codes
+const (
+	ColorReset  = "\033[0m"
+	ColorRed    = "\033[31m"
+	ColorGreen  = "\033[32m"
+	ColorYellow = "\033[33m"
+	ColorBlue   = "\033[34m"
+)
+
 var DB *sql.DB
 
 // InitDB initializes the database connection pool.
@@ -20,7 +29,7 @@ func InitDB() error {
 		// If .env is not found, try loading from one level up (common when running tests or from cmd/)
 		err = godotenv.Load("../.env")
 		if err != nil {
-			log.Println("Warning: .env file not found, relying on environment variables.")
+			log.Println(ColorYellow + "Warning: .env file not found, relying on environment variables." + ColorReset)
 			// Continue without error if .env is optional or vars are set externally
 		}
 	}
@@ -43,11 +52,11 @@ func InitDB() error {
 	err = db.Ping()
 	if err != nil {
 		db.Close() // Close the connection if ping fails
-		return fmt.Errorf("failed to ping database: %w", err)
+		return fmt.Errorf(ColorRed+"failed to ping database: %w"+ColorReset, err)
 	}
 
 	DB = db
-	log.Println("Database connection established successfully.")
+	log.Println(ColorGreen + "Database connection established successfully." + ColorReset)
 	return nil
 }
 

@@ -14,6 +14,15 @@ import (
 	_ "github.com/lib/pq" // Import necessary for side-effects (driver registration)
 )
 
+// ANSI Color Codes
+const (
+	ColorReset  = "\033[0m"
+	ColorRed    = "\033[31m"
+	ColorGreen  = "\033[32m"
+	ColorYellow = "\033[33m"
+	ColorBlue   = "\033[34m"
+)
+
 const shortCodeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const shortCodeLength = 6
 
@@ -43,7 +52,7 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Error marshalling JSON response: %v", err)
+		log.Printf(ColorRed+"Error marshalling JSON response: %v"+ColorReset, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"error": "Internal server error marshalling response"}`))
 		return
@@ -57,7 +66,7 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 // shortCodeExists checks if a short code already exists in the database.
 // TODO: Implement the actual database query when the schema is ready.
 func shortCodeExists(code string) (bool, error) {
-	log.Printf("Checking existence of short code: %s (DB check not implemented yet)", code)
+	log.Printf(ColorBlue+"Checking existence of short code: %s (DB check not implemented yet)"+ColorReset, code)
 	// Placeholder: Query the database, e.g.:
 	// SELECT EXISTS(SELECT 1 FROM urls WHERE short_code = $1)
 	// Handle sql.ErrNoRows for non-existence vs. other errors.
@@ -96,18 +105,18 @@ func CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		var checkErr error
 		exists, checkErr = shortCodeExists(shortCode)
 		if checkErr != nil {
-			log.Printf("Error checking short code existence: %v", checkErr)
+			log.Printf(ColorRed+"Error checking short code existence: %v"+ColorReset, checkErr)
 			respondWithError(w, http.StatusInternalServerError, "Internal server error checking short code")
 			return
 		}
 		if !exists {
 			break // Found unique code
 		}
-		log.Printf("Short code %s already exists, generating a new one...", shortCode)
+		log.Printf(ColorYellow+"Short code %s already exists, generating a new one..."+ColorReset, shortCode)
 	}
 
 	if exists {
-		log.Println("Failed to generate a unique short code after several attempts")
+		log.Println(ColorRed + "Failed to generate a unique short code after several attempts" + ColorReset)
 		respondWithError(w, http.StatusInternalServerError, "Failed to generate unique short code after several attempts")
 		return
 	}
@@ -119,7 +128,7 @@ func CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Implement database insertion
-	log.Printf("Generated unique short code '%s' for URL '%s'", url.ShortCode, url.OriginalURL)
+	log.Printf(ColorGreen+"Generated unique short code '%s' for URL '%s'"+ColorReset, url.ShortCode, url.OriginalURL)
 
 	// Simulate successful creation for now
 	respondWithJSON(w, http.StatusCreated, map[string]string{"short_code": url.ShortCode})
@@ -135,7 +144,7 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Attempting to redirect using short code: %s", shortCode)
+	log.Printf(ColorBlue+"Attempting to redirect using short code: %s"+ColorReset, shortCode)
 
 	// TODO: Implement database lookup for the original URL based on shortCode
 	originalURL := "https://example.com" // Placeholder
